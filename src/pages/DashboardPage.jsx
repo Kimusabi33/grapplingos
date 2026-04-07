@@ -711,7 +711,7 @@ export default function DashboardPage() {
                         <div style={{ fontSize: 12, color: 'var(--muted)' }}>No active subscription</div>
                       )}
                     </div>
-                    {subscription?.stripe_customer_id && (
+                    {isPremium && (
                       <button
                         onClick={openPortal}
                         disabled={portalLoading}
@@ -1017,6 +1017,30 @@ export default function DashboardPage() {
           )
         })}
       </>)}
+
+      {/* Bottom bar — Manage billing + Feedback */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
+        {isPremium ? (
+          <button
+            onClick={openPortal}
+            disabled={portalLoading}
+            className="btn btn-ghost"
+            style={{ fontSize: 12, opacity: portalLoading ? 0.6 : 1 }}
+          >
+            {portalLoading ? 'Opening…' : 'Manage billing'}
+          </button>
+        ) : (
+          <div style={{ fontSize: 12, color: 'var(--muted)' }} />
+        )}
+        <a
+          href="https://github.com/Kimusabi33/grapplingos/issues"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ fontSize: 12, color: 'var(--muted)', textDecoration: 'none', fontFamily: "'DM Sans', sans-serif" }}
+        >
+          Send feedback →
+        </a>
+      </div>
     </div>
   )
 }
