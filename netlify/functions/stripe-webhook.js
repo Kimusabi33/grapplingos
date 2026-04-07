@@ -50,13 +50,15 @@ exports.handler = async (event) => {
           break
         }
 
+        const periodEnd = sub.current_period_end ?? sub.items?.data?.[0]?.current_period_end
+
         await supabase.from('subscriptions').upsert(
           {
             user_id: userId,
             stripe_customer_id: session.customer,
             stripe_subscription_id: session.subscription,
             status: sub.status,
-            current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+            current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
             updated_at: new Date().toISOString(),
           },
           { onConflict: 'user_id' }
@@ -68,10 +70,11 @@ exports.handler = async (event) => {
       case 'customer.subscription.updated': {
         const sub = stripeEvent.data.object
         const userId = sub.metadata?.userId
+        const periodEnd = sub.current_period_end ?? sub.items?.data?.[0]?.current_period_end
 
         const update = {
           status: sub.status,
-          current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+          current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
           updated_at: new Date().toISOString(),
         }
 
@@ -87,10 +90,11 @@ exports.handler = async (event) => {
       case 'customer.subscription.deleted': {
         const sub = stripeEvent.data.object
         const userId = sub.metadata?.userId
+        const periodEnd = sub.current_period_end ?? sub.items?.data?.[0]?.current_period_end
 
         const update = {
           status: 'canceled',
-          current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+          current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
           updated_at: new Date().toISOString(),
         }
 
