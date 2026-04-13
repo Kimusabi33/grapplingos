@@ -7,6 +7,7 @@ import {
   getCompetitions, addCompetition, deleteCompetition, addMatch, deleteMatch,
   getPlannedSessions, addPlannedSession, updateSessionCompletion, deletePlannedSession,
   updatePlannedSessionNotes,
+  submitFeedback,
 } from '../lib/supabase'
 import { useUpgrade, useManageBilling } from '../lib/premium'
 
@@ -342,6 +343,54 @@ function PremiumSaveModal({ onClose }) {
   )
 }
 
+// ── Feedback modal ────────────────────────────────────────────────────────────
+function FeedbackModal({ user, onClose }) {
+  const [text, setText] = useState('')
+  const [status, setStatus] = useState('idle') // idle | saving | done | error
+
+  const handleSubmit = async () => {
+    if (!text.trim()) return
+    setStatus('saving')
+    const { error } = await submitFeedback(user?.id || null, text.trim())
+    if (error) { setStatus('error'); return }
+    setStatus('done')
+    setTimeout(onClose, 1500)
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', width: '100%', maxWidth: 400, padding: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, letterSpacing: '.04em', color: 'var(--white)' }}>Send feedback</div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '0 4px' }}>✕</button>
+        </div>
+        {status === 'done' ? (
+          <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--green)', fontSize: 14 }}>✓ Thanks for your feedback!</div>
+        ) : (
+          <>
+            <textarea
+              value={text}
+              onChange={e => setText(e.target.value)}
+              placeholder="What's on your mind? Bugs, ideas, anything…"
+              className="dash-textarea"
+              style={{ minHeight: 110, marginBottom: 12 }}
+              autoFocus
+            />
+            {status === 'error' && <div style={{ fontSize: 12, color: 'var(--red)', marginBottom: 8 }}>Something went wrong — please try again.</div>}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={onClose} className="btn btn-ghost">Cancel</button>
+              <button onClick={handleSubmit} disabled={!text.trim() || status === 'saving'} className="btn btn-primary" style={{ opacity: status === 'saving' ? 0.7 : 1 }}>
+                {status === 'saving' ? 'Sending…' : 'Send'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Main Dashboard ─────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { user, progress, isPremium, subscription, subscriptionLoading } = useAuth()
@@ -371,6 +420,8 @@ export default function DashboardPage() {
   const [addingMatch, setAddingMatch] = useState(null)
   const [allTechniques, setAllTechniques] = useState([])
   const [showSaveModal, setShowSaveModal] = useState(false)
+  const [showOwnedModal, setShowOwnedModal] = useState(false)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
 
   const visTimeout = useRef(null)
   const noteTimeouts = useRef({})
@@ -575,6 +626,39 @@ export default function DashboardPage() {
   return (
     <div className="container page">
       {showSaveModal && <PremiumSaveModal onClose={() => setShowSaveModal(false)} />}
+
+      {/* Owned techniques modal */}
+      {showOwnedModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 2000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '1rem', overflowY: 'auto' }}
+          onClick={e => { if (e.target === e.currentTarget) setShowOwnedModal(false) }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', width: '100%', maxWidth: 480, padding: '1.5rem', marginTop: '2rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              <div>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, letterSpacing: '.04em', color: 'var(--white)' }}>Owned techniques</div>
+                <div style={{ fontSize: 11, color: 'var(--green)', marginTop: 2 }}>{ownedTechs.length} technique{ownedTechs.length !== 1 ? 's' : ''} mastered</div>
+              </div>
+              <button onClick={() => setShowOwnedModal(false)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '0 4px' }}>✕</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {ownedTechs.map(t => (
+                <div key={t.id} onClick={() => { setShowOwnedModal(false); navigate(`/technique/${t.id}`) }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'var(--bg3)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', cursor: 'pointer', transition: 'border-color .15s' }}
+                  onMouseOver={e => e.currentTarget.style.borderColor = 'var(--green)'}
+                  onMouseOut={e => e.currentTarget.style.borderColor = 'var(--border)'}
+                >
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', flexShrink: 0 }} />
+                  <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 15, letterSpacing: '.04em', color: 'var(--white)', flex: 1 }}>{t.name}</span>
+                  <span style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.06em' }}>{t.cat}</span>
+                  <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '.06em', padding: '2px 7px', borderRadius: 99, border: '1px solid', borderColor: t.sport === 'judo' ? 'var(--gold)' : t.sport === 'bjj' ? 'var(--blue)' : 'var(--border)', color: t.sport === 'judo' ? 'var(--gold)' : t.sport === 'bjj' ? 'var(--blue)' : 'var(--muted2)' }}>{t.sport === 'both' ? 'Both' : t.sport.toUpperCase()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Feedback modal */}
+      {showFeedbackModal && <FeedbackModal user={user} onClose={() => setShowFeedbackModal(false)} />}
       {selectedDay && (
         <DayModal
           day={selectedDay} sessions={calSessions} plannedForDay={plannedForDay}
@@ -751,32 +835,15 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Owned techniques */}
-          {ownedTechs.length > 0 && (
-            <div className="card" style={{ marginBottom: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <div className="section-label" style={{ margin: 0 }}>Owned</div>
-                <span style={{ fontSize: 11, color: 'var(--green)' }}>{ownedTechs.length} technique{ownedTechs.length !== 1 ? 's' : ''}</span>
-              </div>
-              <div className="pinned-list">
-                {ownedTechs.map(t => (
-                  <div key={t.id} className="pinned-chip" onClick={() => navigate(`/technique/${t.id}`)}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', flexShrink: 0 }} />
-                    <span className="pinned-chip-name">{t.name}</span>
-                    <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--green)' }}>owned</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Progress rings */}
           <div className="card" style={{ marginBottom: 10 }}>
             <div className="section-label">Technique progress</div>
             <div style={{ display: 'flex', justifyContent: 'space-around', padding: '4px 0 8px' }}>
               <Ring pct={(aware / total) * 100} color="var(--gold)" label="Aware" value={aware} />
               <Ring pct={(drilling / total) * 100} color="var(--blue)" label="Drilling" value={drilling} />
-              <Ring pct={(owned / total) * 100} color="var(--green)" label="Owned" value={owned} />
+              <div onClick={() => owned > 0 && setShowOwnedModal(true)} style={{ cursor: owned > 0 ? 'pointer' : 'default' }} title={owned > 0 ? 'View owned techniques' : ''}>
+                <Ring pct={(owned / total) * 100} color="var(--green)" label="Owned ↗" value={owned} />
+              </div>
               <Ring pct={((aware + drilling + owned) / total) * 100} color="var(--purple)" label="Total" value={aware + drilling + owned} />
             </div>
           </div>
@@ -1032,14 +1099,12 @@ export default function DashboardPage() {
         ) : (
           <div style={{ fontSize: 12, color: 'var(--muted)' }} />
         )}
-        <a
-          href="https://github.com/Kimusabi33/grapplingos/issues"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ fontSize: 12, color: 'var(--muted)', textDecoration: 'none', fontFamily: "'DM Sans', sans-serif" }}
+        <button
+          onClick={() => setShowFeedbackModal(true)}
+          style={{ background: 'none', border: 'none', fontSize: 12, color: 'var(--muted)', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", padding: 0 }}
         >
           Send feedback →
-        </a>
+        </button>
       </div>
     </div>
   )
