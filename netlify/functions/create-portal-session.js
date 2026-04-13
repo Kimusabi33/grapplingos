@@ -15,6 +15,17 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: 'Method Not Allowed' }
   }
 
+  // Verify the caller's Supabase JWT so the userId cannot be spoofed
+  const authHeader = event.headers['authorization'] || event.headers['Authorization']
+  if (!authHeader?.startsWith('Bearer ')) {
+    return { statusCode: 401, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Unauthorized' }) }
+  }
+  const token = authHeader.slice(7)
+  const { data: { user: authedUser }, error: authError } = await supabase.auth.getUser(token)
+  if (authError || !authedUser) {
+    return { statusCode: 401, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Unauthorized' }) }
+  }
+
   let userId
   try {
     const body = JSON.parse(event.body || '{}')
@@ -23,8 +34,9 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Invalid request body' }) }
   }
 
-  if (!userId) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Missing userId' }) }
+  // Ensure the token belongs to the user making the request
+  if (!userId || authedUser.id !== userId) {
+    return { statusCode: 403, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Forbidden' }) }
   }
 
   try {

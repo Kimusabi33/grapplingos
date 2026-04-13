@@ -247,9 +247,9 @@ export const getHistoryCache = async (sport) => {
   return data?.content || null
 }
 
-export const saveHistoryCache = async (sport, content) => {
-  const { error } = await supabase
-    .from('history_cache')
-    .upsert({ id: sport, content }, { onConflict: 'id' })
-  return { error }
+// saveHistoryCache is intentionally a no-op from the browser — the history_cache
+// table is read-only via the anon key (write policies were removed for security).
+// Content is seeded server-side via the service role key if needed.
+export const saveHistoryCache = async (_sport, _content) => {
+  return { error: null }
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from './AuthContext'
+import { supabase } from './supabase'
 
 // ── Upgrade hook — call from any component ────────────────────────────────────
 export function useUpgrade() {
@@ -15,9 +16,13 @@ export function useUpgrade() {
     }
     setUpgrading(true)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/.netlify/functions/create-checkout-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
         body: JSON.stringify({ userId: user.id, email: user.email }),
       })
       const { url, error } = await res.json()
@@ -45,9 +50,13 @@ export function useManageBilling() {
     if (!user) return
     setLoading(true)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/.netlify/functions/create-portal-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
         body: JSON.stringify({ userId: user.id }),
       })
       const { url, error } = await res.json()
