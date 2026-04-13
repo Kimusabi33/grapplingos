@@ -841,9 +841,7 @@ export default function DashboardPage() {
             <div style={{ display: 'flex', justifyContent: 'space-around', padding: '4px 0 8px' }}>
               <Ring pct={(aware / total) * 100} color="var(--gold)" label="Aware" value={aware} />
               <Ring pct={(drilling / total) * 100} color="var(--blue)" label="Drilling" value={drilling} />
-              <div onClick={() => owned > 0 && setShowOwnedModal(true)} style={{ cursor: owned > 0 ? 'pointer' : 'default' }} title={owned > 0 ? 'View owned techniques' : ''}>
-                <Ring pct={(owned / total) * 100} color="var(--green)" label="Owned ↗" value={owned} />
-              </div>
+              <Ring pct={(owned / total) * 100} color="var(--green)" label="Owned" value={owned} />
               <Ring pct={((aware + drilling + owned) / total) * 100} color="var(--purple)" label="Total" value={aware + drilling + owned} />
             </div>
           </div>
@@ -857,7 +855,10 @@ export default function DashboardPage() {
               <div className="stat-big" style={{ color: 'var(--white)' }}>{totalSessions}</div>
               <div className="stat-label">Sessions ↗</div>
             </div>
-            <div className="stat-box"><div className="stat-big green">{owned}</div><div className="stat-label">Owned</div></div>
+            <div className="stat-box" onClick={() => owned > 0 && setShowOwnedModal(true)} style={{ cursor: owned > 0 ? 'pointer' : 'default' }}
+              onMouseOver={e => { if (owned > 0) e.currentTarget.style.borderColor = 'var(--green)' }}
+              onMouseOut={e => e.currentTarget.style.borderColor = 'var(--border)'}
+            ><div className="stat-big green">{owned}</div><div className="stat-label">Owned {owned > 0 ? '↗' : ''}</div></div>
           </div>
 
           {/* Calendar */}
