@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">GrapplingOS</string>
+    <string name="title_activity_main">GrapplingOS</string>
+    <string name="package_name">com.grapplingos.app</string>
+    <string name="custom_url_scheme">com.grapplingos.app</string>
+</resources>
